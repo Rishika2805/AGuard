@@ -1,0 +1,44 @@
+user:
+  name: Rishika
+
+reddit:
+  enabled: true
+  subreddits:
+    - python
+    - internship
+    - Business_Ides
+    - developersIndia
+    - BtechCoders
+    - technology
+    - Leetcode
+  include_fields:
+    - tech
+    - internship
+    - career
+    - self_development
+  exclude_fields:
+    - politics
+    - shitpost
+    - nsfw
+    - relationship
+
+email:
+  enabled: true
+  important_senders:
+    - "@college.edu"
+    - "@university.edu"
+    - "@company.com"
+  important_keywords:
+    - internship
+    - interview
+    - exam
+    - deadline
+    - hackathon
+  ignore_keywords:
+    - promotion
+    - sale
+    - discount
+
+general:
+  min_content_length: 50
+  language: en
