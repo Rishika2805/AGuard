@@ -2,8 +2,11 @@
 agentenv/
 venv/
 .env/
+
+# Python cache
 __pycache__/
 *.pyc
+
 
 # OAuth
 sources/gmail/auth/credential.json
