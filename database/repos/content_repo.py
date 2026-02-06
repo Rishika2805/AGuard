@@ -26,7 +26,7 @@ def is_malformed(item  : dict) -> bool:
         return True
     return False
 
-def insert_content(item : dict) -> bool:
+def insert_content(item : dict,cursor) -> bool:
     """
     Inserts a content into DB.
     Returns True if insertion was successful, False otherwise
@@ -38,8 +38,6 @@ def insert_content(item : dict) -> bool:
     content_hash = generate_content_hash(item)
     processed_at = datetime.utcnow().isoformat()
 
-    conn = get_connection()
-    cursor = conn.cursor()
 
     try :
         cursor.execute(
@@ -72,7 +70,6 @@ def insert_content(item : dict) -> bool:
             )
         )
 
-        conn.commit()
         print(f"[INSERTED] {item['source']}::{item['id']}")
         return True
 
@@ -80,5 +77,3 @@ def insert_content(item : dict) -> bool:
         print(f"[SKIPPED][ERROR]: {e}")
         return False
 
-    finally:
-        cursor.close()

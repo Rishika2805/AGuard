@@ -1,0 +1,10 @@
+# virtual environment
+agentenv/
+venv/
+.env/
+__pycache__/
+*.pyc
+
+# OAuth
+sources/gmail/auth/credential.json
+sources/gmail/auth/token.json
