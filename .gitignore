@@ -11,3 +11,7 @@ __pycache__/
 # OAuth
 sources/gmail/auth/credential.json
 sources/gmail/auth/token.json
+
+# ide
+.idea/
+.vscode/
