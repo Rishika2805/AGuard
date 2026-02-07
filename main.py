@@ -1,13 +1,12 @@
-from agents.orchestrator import collect_all_data
-from agents.preprocessor import preprocessor
+from database.db import get_connection
 
-def main():
-    items = collect_all_data()
+conn = get_connection()
+cursor = conn.cursor()
 
-    for item in items:
-        item = preprocessor(item)
-        print(item["source"], item["word_count"], item["has_links"])
+cursor.execute("PRAGMA table_info(decisions)")
+for row in cursor.fetchall():
+    print(row)
 
+conn.commit()
+conn.close()
 
-if __name__ == "__main__":
-    main()

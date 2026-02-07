@@ -51,6 +51,8 @@ def preprocessor(item : dict) -> dict:
     IMPORTANT : This function does NOT make decision.
     It only cleans and enriches
     """
+    if not isinstance(item, dict):
+        raise TypeError("Preprocess expects item to be a dict")
 
     title = item.get("title","")
     content = item.get("content","")

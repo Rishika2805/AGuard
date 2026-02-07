@@ -3,7 +3,6 @@
 import hashlib
 import json
 from datetime import datetime
-from database.db import get_connection
 
 def generate_content_hash(item : dict) -> dict:
     """

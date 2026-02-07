@@ -21,6 +21,10 @@ reddit:
     - shitpost
     - nsfw
     - relationship
+    - rant
+    - vent
+    - hate
+    - meme
 
 email:
   enabled: true
@@ -28,6 +32,11 @@ email:
     - "@college.edu"
     - "@university.edu"
     - "@company.com"
+  blacklisted_senders:
+    - "noreply@delhivery.com"
+    - "noreply@redditmail.com"
+    - "noreply@swiggy.in"
+    - "hello@codingninjas.com"
   important_keywords:
     - internship
     - interview
@@ -35,9 +44,13 @@ email:
     - deadline
     - hackathon
   ignore_keywords:
-    - promotion
-    - sale
-    - discount
+    - promotions
+    - sales
+    - discounts
+    - myntra
+    - meesho
+    - flipkart
+  max_age_days: 7
 
 general:
   min_content_length: 50

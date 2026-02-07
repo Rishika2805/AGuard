@@ -28,14 +28,16 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS decisions (
             decision_id INTEGER PRIMARY KEY AUTOINCREMENT,
             content_id TEXT NOT NULL,
-            decision TEXT,
-            score TEXT,
+            decision TEXT NOT NULL,
+            score REAL,
             reason TEXT,
             stage TEXT,
-            decision_at TEXT,
-            FOREIGN KEY (decision_id) 
-                REFERENCES decisions (decision_id)
+            decided_at TEXT,
+            FOREIGN KEY (content_id)
+                REFERENCES content_items(id)
                 ON DELETE CASCADE
+);
+
         )           
         """
     )

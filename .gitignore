@@ -15,3 +15,7 @@ sources/gmail/auth/token.json
 # ide
 .idea/
 .vscode/
+
+
+#folders
+scripts/
