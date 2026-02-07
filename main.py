@@ -1,12 +1,8 @@
-from database.db import get_connection
+from agents.similarity import get_similarity_scores
 
-conn = get_connection()
-cursor = conn.cursor()
+text = "how to get internship in software engineering"
 
-cursor.execute("PRAGMA table_info(decisions)")
-for row in cursor.fetchall():
-    print(row)
+scores = get_similarity_scores(text, top_k=5)
 
-conn.commit()
-conn.close()
-
+for s in scores:
+    print(s)
