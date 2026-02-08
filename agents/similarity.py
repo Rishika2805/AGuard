@@ -10,15 +10,17 @@ def cosine_dist_to_similarity(dist : float) -> float:
         return 0.0
 
     similarity = 1.0 - dist
-    return round(max(0.0, similarity), 2)
+    return round(max(0.0, similarity), 3)
 
 
 
-def get_similarity_scores(text : str, top_k : int = 5):
+def get_similarity_scores(item : dict, top_k : int = 5):
     """
     Agent-level helper.
     Interprets vector search results
     """
+
+    text = item.get("full_text","")
 
     results = find_similar_content(text, top_k=top_k)
 
@@ -34,5 +36,7 @@ def get_similarity_scores(text : str, top_k : int = 5):
                 'similarity_score': cosine_dist_to_similarity(dist),
             }
         )
+
+    item["similarity_scores"] = scored
 
     return scored

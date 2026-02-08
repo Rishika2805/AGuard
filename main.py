@@ -5,4 +5,4 @@ text = "how to get internship in software engineering"
 scores = get_similarity_scores(text, top_k=5)
 
 for s in scores:
-    print(s)
+    print(s['similarity_score'])
