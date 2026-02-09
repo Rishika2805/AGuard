@@ -4,8 +4,6 @@ user:
 reddit:
   enabled: true
   subreddits:
-    - internshipIndia
-    - LeetcodeDesi
     - developersIndia
     - ENGLISH
   include_fields:

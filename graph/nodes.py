@@ -12,6 +12,9 @@ from agents.similarity import get_similarity_scores
 from agents.llm_gate import evaluate_content
 from memory.vector_repo import upsert_content_embedding
 from agents.decision import make_decision
+from agents.summary_llm import generate_summary
+from notification.dispatcher import dispatch_notification
+
 
 @safe_node
 def fetch_node(state : AGuardState):
@@ -129,8 +132,10 @@ def decision_node(state : AGuardState):
         item['decision'] = response["decision"]
         if response["decision"] == "Notify":
             notified_items.append(item)
+            item['summary'] = generate_summary(item)
         elif response["decision"] == "Archive":
             archived_items.append(item)
+            item['summary'] = generate_summary(item)
 
         print(
             f"DECISION | {item['id']} | "
@@ -145,6 +150,30 @@ def decision_node(state : AGuardState):
 
 
     return {"notify_items": notified_items, "archive_items": archived_items}
+
+@safe_node
+def notification_node(state: AGuardState):
+    """
+    LangGraph notification node.
+    This expresses INTENT, not delivery implementation.
+    """
+
+    notify_items = state.get("notify_items", [])
+    archive_items = state.get("archive_items", [])
+    print("🚀 Entered notification_node")
+    print("notify_items:", len(state.get("notify_items", [])))
+    print("archive_items:", len(state.get("archive_items", [])))
+
+    if not notify_items and not archive_items:
+        print("ℹ️ No items to notify")
+        return {}
+    for item in notify_items:
+        dispatch_notification(item)
+
+    for item in archive_items:
+        dispatch_notification(item)
+    return state
+
 
 
 

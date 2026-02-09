@@ -8,7 +8,8 @@ from graph.nodes import (
     hard_rules_node,
     vector_node,
     llm_node,
-    decision_node
+    decision_node,
+    notification_node
 )
 from graph.langgraph_routes import route_after_hard_rules, route_after_llm, route_after_decision
 
@@ -25,6 +26,7 @@ def build_graph():
     graph.add_node("vector", vector_node)
     graph.add_node("llm", llm_node)
     graph.add_node("decision", decision_node)
+    graph.add_node("notify", notification_node)
 
     # linear edges
     graph.set_entry_point("fetch_and_parse")
@@ -60,9 +62,10 @@ def build_graph():
         "decision",
         route_after_decision,
         {
-            "notify" : END,
-            "end" : END
+            "notify" : 'notify',
+            "end" : END,
         }
     )
+    graph.add_edge("notify", END)
 
     return graph.compile()

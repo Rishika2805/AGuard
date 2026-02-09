@@ -19,5 +19,4 @@ sources/gmail/auth/token.json
 
 #folders
 scripts/
-notification/
 .env
