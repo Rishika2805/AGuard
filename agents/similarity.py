@@ -37,6 +37,10 @@ def get_similarity_scores(item : dict, top_k : int = 5):
             }
         )
 
-    item["similarity_scores"] = scored
+    if scored:
+        avg_similarity = sum(s["similarity_score"] for s in scored) / len(scored)
+    else:
+        avg_similarity = 0.0
 
-    return scored
+    # store back into item
+    item["similarity_score"] = round(avg_similarity, 4)

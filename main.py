@@ -1,8 +1,34 @@
-from agents.similarity import get_similarity_scores
+from graph.graph import build_graph
 
-text = "how to get internship in software engineering"
+if __name__ == "__main__":
+    graph = build_graph()
+    result = graph.invoke({})
 
-scores = get_similarity_scores(text, top_k=5)
+    print("\n=== FINAL STATE ===")
+    for k, v in result.items():
+        print(f"{k}: {type(v)}")
 
-for s in scores:
-    print(s['similarity_score'])
+    print("\n=== NOTIFY ITEMS ===")
+    if result.get("notify_items"):
+        for i, item in enumerate(result["notify_items"], start=1):
+            print(f"\n{i}. ID: {item.get('id')}")
+            print(f"   Source: {item.get('source')}")
+            print(f"   Title: {item.get('title')}")
+            print(f"   Similarity: {item.get('similarity_score')}")
+            print(f"   url: {item.get('url')}")
+            print(f"   reason: {item.get('reason')}")
+    else:
+        print("No items to notify")
+
+    print("\n=== ARCHIVE ITEMS ===")
+    if result.get("archive_items"):
+        for i, item in enumerate(result["archive_items"], start=1):
+            print(f"\n{i}. ID: {item.get('id')}")
+            print(f"   Source: {item.get('source')}")
+            print(f"   Title: {item.get('title')}")
+            print(f"   Similarity: {item.get('similarity_score')}")
+            print(f"   url: {item.get('url')}")
+            print(f"   reason: {item.get('reason')}")
+    else:
+        print("No items archived")
+

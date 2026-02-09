@@ -19,7 +19,7 @@ def upsert_content_embedding(item : dict):
     Store embedding for a content item
     """
 
-    client,collection = get_collection()
+    collection = get_collection()
 
     embedding = embed_text(item['full_text'])
 

@@ -175,6 +175,13 @@ Rules:
 4. Sensitivity violations require rejection regardless of relevance.
 5. Confidence reflects ambiguity, not importance.
 
+Rules for reason -
+- The "reason" must be ONE short sentence
+- Maximum 20 words
+- No commas if possible
+- Do not explain
+- Do not add extra fields
+
 Use careful internal reasoning.
 Do NOT explain reasoning.
 Do NOT reference rules or policies.
@@ -197,9 +204,9 @@ def build_human_message(item : dict) -> HumanMessage:
         
         title : {item["title"]}
         
-        scores : {item["relevance_score"]}
+        scores : {item["hard_rule_score"]}
         
-        similarity_scores : {item["similarity_scores"]}
+        similarity_scores : {item["similarity_score"]}
         
         user_preferences : {prefs}
         """

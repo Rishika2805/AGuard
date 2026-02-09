@@ -4,18 +4,18 @@ user:
 reddit:
   enabled: true
   subreddits:
-    - python
-    - internship
-    - Business_Ides
+    - internshipIndia
+    - LeetcodeDesi
     - developersIndia
-    - BtechCoders
-    - technology
-    - Leetcode
+    - ENGLISH
   include_fields:
     - tech
     - internship
     - career
     - self_development
+    - learning
+    - english
+    - dsa
   exclude_fields:
     - politics
     - shitpost
@@ -38,11 +38,10 @@ email:
     - "noreply@swiggy.in"
     - "hello@codingninjas.com"
   important_keywords:
+    - tech
     - internship
-    - interview
-    - exam
-    - deadline
-    - hackathon
+    - career
+    - self_development
   ignore_keywords:
     - promotions
     - sales
@@ -53,5 +52,5 @@ email:
   max_age_days: 7
 
 general:
-  min_content_length: 50
+  min_content_length: 20
   language: en

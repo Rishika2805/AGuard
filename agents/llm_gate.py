@@ -18,13 +18,13 @@ class EvaluateResult(BaseModel):
             raise ValueError("Reason must be concise (≤20 words)")
         return v
 
-    @validator("decision")
-    def decision_validator(cls, v,values):
-        score = values.get("relevance_score",0)
-
-        if v == "Allowed" and score <= 0.4:
-            raise ValueError("Allowed content must have relevance_score > 0.4")
-        return v
+    # @validator("decision")
+    # def decision_validator(cls, v,values):
+    #     score = values.get("relevance_score",0)
+    #
+    #     if v == "Allowed" and score <= 0.4:
+    #         raise ValueError("Allowed content must have relevance_score > 0.2")
+    #     return v
 
 
 llm = ChatOpenAI(

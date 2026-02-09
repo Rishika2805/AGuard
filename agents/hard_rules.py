@@ -137,45 +137,46 @@ def count_preferred_keywords(item : dict) -> dict:
 Hard_rule function
 '''
 
-def apply_hard_rules(item : dict) -> dict:
+def apply_hard_rules(item: dict) -> dict:
+    score = 0.5  # 🔑 start neutral, not zero
+    reasons = []
 
+    # ---------- SOFT PENALTIES ----------
     if item['word_count'] < prefs['general']['min_content_length']:
-        return drop(item, "Low Content Length")
+        score -= 0.15
+        reasons.append("Short content")
 
     if contains_unwanted_words(item):
-        return drop(item, "Unwanted Content")
+        score -= 0.2
+        reasons.append("Contains unwanted keywords")
 
-    if item['source'] == 'gmail' and blacklist_senders(item):
-        return drop(item, "Blacklisted Senders")
+    # ---------- OPTIONAL HARD DROPS (VERY RARE) ----------
+    if item.get("content_hash_duplicate"):
+        return drop(item, "Duplicate Content", score=0.0)
 
-    if is_stale(item):
-        return drop(item, "Stale Content")
-
-    if is_image_only(item):
-        return drop(item, "Image Only")
-
-    if is_link_only(item):
-        return drop(item, "Link Only")
-
-    if item['source'] == 'reddit' and len(item['title']) < 15:
-        return drop(item, "Low Effort Title")
-
-    if is_megathread(item):
-        return drop(item, "Megathread")
-
-    #--------------- SCORING ---------------------
-
-    score = 0.0
-
+    # ---------- POSITIVE SIGNALS ----------
     matches = count_preferred_keywords(item)
 
-    if matches > 0:
-        score += 0.3
-    if matches > 2:
+    if matches >= 1:
         score += 0.2
+        reasons.append("Matches preferred keywords")
 
-    if score > 0.5:
-        return pass_to_llm(item,score,"Relevant Content")
-    else:
-        return drop(item, "Low Relevance", score)
+    if matches >= 3:
+        score += 0.2
+        reasons.append("Strong keyword match")
+
+    # Clamp score
+    score = max(0.0, min(score, 1.0))
+    item["hard_rule_score"] = score
+
+    # ---------- PASS LOGIC ----------
+    if score >= 0.2:  # 🔥 MUCH LOWER GATE
+        return pass_to_llm(
+            item,
+            reason=", ".join(reasons) or "Passed hard rules",
+            score=score
+        )
+
+    return drop(item, "Very low signal", score)
+
 
