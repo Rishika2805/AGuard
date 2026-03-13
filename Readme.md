@@ -1,5 +1,10 @@
 # AGuard AI Agent – Complete Project Guide
 
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![LangGraph](https://img.shields.io/badge/LangGraph-Agent-green)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+
+
 > **Goal:** Build an autonomous AI agent that filters noisy information from Gmail and Reddit, surfaces only relevant content, and notifies the user with explanations.
 
 ---
@@ -176,62 +181,67 @@ Each node is wrapped with a safety decorator to prevent full pipeline crashes on
 
 ```text
 AGuard-AI-Agent/
-├─ main.py                          # Entry point; builds and invokes LangGraph
-├─ Readme.md                        # Project documentation
+├── main.py                          # Entry point — builds and runs LangGraph pipeline
+├── requirements.txt                 # Python dependencies
+├── .env                             # Environment variables (not committed)
 │
-├─ agents/
-│  ├─ fetch_data.py                 # Gmail + Reddit collection + dedup/sort
-│  ├─ preprocessor.py               # Text cleaning and enrichment
-│  ├─ hard_rules.py                 # Deterministic filtering and hard-rule scoring
-│  ├─ similarity.py                 # Chroma distance -> similarity scoring
-│  ├─ llm_gate.py                   # Structured LLM relevance evaluation
-│  ├─ prompting.py                  # System/human prompts for evaluator
-│  ├─ decision.py                   # Final weighted decision bands
-│  └─ summary_llm.py                # LLM summary generation for notifications
+├── agents/                          # Core processing logic
+│   ├── fetch_data.py                # Gmail + Reddit collection, dedup, sort
+│   ├── preprocessor.py              # Text cleaning and metadata enrichment
+│   ├── hard_rules.py                # Deterministic scoring and filtering
+│   ├── similarity.py                # Chroma cosine distance → similarity score
+│   ├── llm_gate.py                  # Structured LLM relevance evaluation
+│   ├── prompting.py                 # System + human prompts for the evaluator
+│   ├── decision.py                  # Weighted score fusion and decision bands
+│   └── summary_llm.py               # LLM-powered notification summary generation
 │
-├─ graph/
-│  ├─ graph.py                      # Node registration and routing topology
-│  ├─ nodes.py                      # Node implementations
-│  ├─ langgraph_routes.py           # Conditional branch logic
-│  ├─ state.py                      # Typed pipeline state schema
-│  ├─ safe_node.py                  # Exception-safe node decorator
-│  └─ logger.py                     # Central logging config
+├── graph/                           # LangGraph workflow definition
+│   ├── graph.py                     # Node registration and edge/route topology
+│   ├── nodes.py                     # Node function implementations
+│   ├── langgraph_routes.py          # Conditional branch routing logic
+│   ├── state.py                     # Typed pipeline state schema (TypedDict)
+│   ├── safe_node.py                 # Exception-safe node decorator
+│   └── logger.py                    # Centralised logging configuration
 │
-├─ sources/
-│  ├─ gmail/
-│  │  ├─ auth/auth.py               # Gmail OAuth + service creation
-│  │  ├─ fetcher.py                 # Gmail message fetching
-│  │  └─ parser.py                  # Gmail payload parsing
-│  └─ reddit/
-│     ├─ fetcher.py                 # RSS retrieval
-│     └─ parser.py                  # RSS entry normalization
+├── sources/                         # Data source connectors
+│   ├── gmail/
+│   │   ├── auth/auth.py             # Gmail OAuth2 flow and service creation
+│   │   ├── fetcher.py               # Gmail message ID and payload fetching
+│   │   └── parser.py                # Gmail payload → normalised item schema
+│   └── reddit/
+│       ├── fetcher.py               # Subreddit RSS feed retrieval
+│       └── parser.py                # RSS entry → normalised item schema
 │
-├─ database/
-│  ├─ db.py                         # SQLite connection utility
-│  ├─ schema.py                     # Table creation
-│  ├─ aguard.db                     # Local SQLite DB file
-│  └─ repos/
-│     ├─ content_repo.py            # Insert content + content hash generation
-│     └─ decision_repo.py           # Decision logging repository
+├── database/                        # Persistence layer
+│   ├── db.py                        # SQLite connection factory
+│   ├── schema.py                    # Table definitions (content_items, decisions)
+│   └── repos/
+│       ├── content_repo.py          # Content insert with SHA-256 hash dedup
+│       └── decision_repo.py         # Decision log repository
 │
-├─ memory/
-│  ├─ embedder.py                   # Embedding model loading and encoding
-│  ├─ chroma_client.py              # Persistent Chroma client
-│  ├─ vector_repo.py                # Upsert/query vector memory
-│  └─ chroma_store/                 # On-disk Chroma storage
+├── memory/                          # Vector memory (ChromaDB)
+│   ├── embedder.py                  # SentenceTransformer model and encode helper
+│   ├── chroma_client.py             # Persistent Chroma client setup
+│   └── vector_repo.py               # Upsert embeddings and similarity search
 │
-├─ notification/
-│  ├─ console.py                    # Console notifier
-│  ├─ email.py                      # SMTP email notifier
-│  ├─ telegram.py                   # Telegram notifier + callback handling
-│  └─ dispatcher.py                 # Multi-channel dispatch helper
+├── notification/                    # Notification delivery channels
+│   ├── email.py                     # SMTP/SSL email with HTML template
+│   ├── telegram.py                  # Telegram bot with inline callback buttons
+│   ├── console.py                   # Local console notifier
+│   └── dispatcher.py                # Multi-channel dispatch helper
 │
-├─ config/
-│  ├─ loader.py                     # YAML loader
-│  └─ user_preferences.yaml         # Personalization rules and thresholds
+├── config/
+│   ├── loader.py                    # YAML config loader
+│   └── user_preferences.yaml        # Topics, keywords, senders, thresholds
 │
-└─ utils/
-   └─ stream_utils.py               # Dedup, sorting, stream formatting helpers
+├── scripts/                         # Local utility and debug scripts
+│   ├── check_env.py                 # Verify environment variables are set
+│   ├── check_email.py               # Test email notification delivery
+│   ├── check_telegram.py            # Test Telegram notification delivery
+│   └── test_embedding.py            # Verify embedding model output
+│                    
+└── utils/
+    └── stream_utils.py              # Dedup, sort, and stream print helpers
 ```
 
 ---
@@ -268,14 +278,11 @@ Windows (PowerShell):
 
 3. **Install dependencies**
 
-> No `requirements.txt` is currently included, so install from detected imports:
-
 ```bash
-pip install \
-  langgraph langchain langchain-core langchain-groq langchain-openai \
-  pydantic python-dotenv pyyaml feedparser requests chromadb \
-  sentence-transformers google-api-python-client google-auth-oauthlib google-auth-httplib2
+pip install -r requirements.txt
 ```
+
+> `requirements.txt` lists only the direct project dependencies grouped by purpose (orchestration, LLM, vector memory, ingestion, notifications, config).
 
 4. **Set up Gmail OAuth files**
 
