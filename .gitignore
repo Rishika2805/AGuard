@@ -17,6 +17,6 @@ sources/gmail/auth/token.json
 .vscode/
 
 
-#folders
-scripts/
+#files
+scripts/reset_db.py
 .env

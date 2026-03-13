@@ -18,6 +18,32 @@ Modern users are overwhelmed by emails and social content. Important signals are
 
 * Scheduler → Fetch → Preprocess → Hard Filters → LLM Gate → Relevance Scoring → Decision → Notify → Log & Memory
 
+**Simple Architecture Diagram:**
+
+```text
+[Gmail API]      [Reddit RSS]
+     |                |
+     +------ Fetch ----+
+               |
+         Preprocess
+               |
+        Hard Rules Gate
+         |            |
+       Drop         Pass
+                      |
+             Vector Similarity
+                      |
+                 LLM Gate
+               |         |
+             Reject    Allow
+                         |
+                   Final Decision
+                |      |      |
+              Ignore Archive Notify
+                       |      |
+                     Email Telegram
+```
+
 **Sources (V1):**
 
 * Gmail (official Gmail API, read-only)
@@ -30,231 +56,317 @@ Modern users are overwhelmed by emails and social content. Important signals are
 * Fetchers remain interchangeable for future API swap
 
 ---
+# AGuard AI Agent
 
-## 3. Agent Responsibilities
-
-### Scheduler
-
-* Time-based trigger (e.g., every 30 minutes)
-* Respects quiet hours
-
-### Fetchers
-
-* **Gmail Fetcher:** Uses Gmail API to list recent/unread messages
-* **Reddit Fetcher:** Uses subreddit RSS feeds for new posts
-* Fetchers are intentionally dumb (no intelligence)
-
-### Preprocessor
-
-* Clean text (strip signatures, HTML, emojis)
-* Normalize fields into a common schema
-
-### Hard Filters (Rule-Based)
-
-* Fast, deterministic, ruthless
-* Remove 60–80% noise before AI
-
-### LLM Gate (Lightweight)
-
-* Single question: informational vs noise
-* No decisions, only classification
-
-### Relevance Scoring
-
-* Weighted combination of rules, LLM understanding, memory, and context
-
-### Decision Engine
-
-* Threshold-based outcomes: Notify / Batch / Ignore
-
-### Logger & Memory
-
-* Log every decision with reason
-* Store content memory, interaction memory, preference memory, pattern memory
+An AI-powered content triage pipeline that fetches data from Gmail and Reddit, filters low-value/noisy content, scores relevance with rule-based + vector + LLM signals, and sends actionable notifications.
 
 ---
 
-## 4. Normalized Content Schema
+## 1) Project Overview
 
-All sources convert to the same shape:
+AGuard is built as a multi-stage agent workflow using LangGraph. It ingests content from multiple sources, normalizes and preprocesses it, stores it in SQLite and ChromaDB, evaluates relevance with hard rules and LLM judgment, then routes results to Telegram and Email.
 
+The core objective is to reduce information overload by surfacing only high-signal items.
+
+---
+
+## 2) Problem the Project Solves
+
+Users receive too much content (emails, social posts, discussions) and cannot manually review everything efficiently. Important opportunities and updates are often missed.
+
+This project solves that by:
+
+- Automating multi-source ingestion.
+- Removing obvious noise early with deterministic filtering.
+- Using semantic memory and LLM scoring for better prioritization.
+- Delivering concise summaries through notification channels.
+
+---
+
+## 3) Features
+
+- **Multi-source ingestion**
+  - Gmail via Gmail API (OAuth, read-only scope).
+  - Reddit via subreddit RSS feeds.
+- **Unified item schema** for source-agnostic processing.
+- **Text preprocessing**
+  - HTML stripping, normalization, boilerplate cleanup, metadata enrichment (`word_count`, `has_links`).
+- **Hard-rule gate**
+  - Keyword inclusion/exclusion logic from user preferences.
+  - Minimum-content thresholding.
+  - Duplicate-content blocking through content hash storage.
+- **Vector memory (ChromaDB)**
+  - Embedding generation with `sentence-transformers`.
+  - Similarity search and average similarity scoring.
+- **LLM relevance gate**
+  - Structured JSON decision (`Allowed` / `Rejected`) with confidence and reason.
+- **Final decision engine**
+  - Weighted score fusion and outcome bands: `Notify`, `Archive`, `Ignore`.
+- **Summary generation**
+  - Short notification-ready summaries via LLM.
+- **Notification delivery**
+  - Telegram (interactive message with Ignore callback button).
+  - Email (HTML + plain text fallback).
+- **Persistent logging**
+  - Content records and decision records in SQLite.
+
+---
+
+## 4) System Architecture / Workflow
+
+The main runtime compiles a LangGraph pipeline with conditional branches:
+
+1. **fetch_and_parse**
+   - Collect Gmail + Reddit items.
+   - Deduplicate and sort.
+2. **preprocessor**
+   - Build clean `full_text` and metadata features.
+3. **store**
+   - Insert content into SQLite (`content_items`) with content hash.
+4. **hard_rules**
+   - Score and classify as `PASS_TO_LLM` or `DROP`.
+   - Log rule decision in `decisions` table.
+   - If none pass, graph ends.
+5. **vector**
+   - Upsert embeddings to Chroma.
+   - Query similarity and attach `similarity_score`.
+6. **llm**
+   - Run LLM structured evaluation.
+   - Keep only `Allowed` items.
+   - If none remain, graph ends.
+7. **decision**
+   - Compute final weighted score:
+
+   $$
+   	ext{final\_score} = 0.25 \cdot \text{hard\_rule\_score} + 0.25 \cdot \text{similarity\_score} + 0.50 \cdot \text{llm\_score}
+   $$
+
+   - Route to `Notify`, `Archive`, or `Ignore`.
+8. **notify**
+   - Telegram for notify items.
+   - Email for archive items.
+
+Each node is wrapped with a safety decorator to prevent full pipeline crashes on per-node exceptions.
+
+---
+
+## 5) Tech Stack
+
+- **Language:** Python 3.11
+- **Workflow orchestration:** LangGraph
+- **LLM framework:** LangChain
+- **LLM providers used in code:**
+  - Groq (`llama-3.1-8b-instant`) for relevance evaluation
+  - OpenAI (`gpt-4o-mini`) for summary generation
+- **Vector database:** ChromaDB (persistent local store)
+- **Embeddings:** `sentence-transformers` (`BAAI/bge-base-en-v1.5`)
+- **Structured validation:** Pydantic
+- **Data ingestion:**
+  - Gmail API (`google-api-python-client`, OAuth)
+  - Reddit RSS (`feedparser`)
+- **Storage:** SQLite
+- **Notifications:**
+  - SMTP email (Gmail SMTP SSL)
+  - Telegram Bot API
+- **Config:** YAML + environment variables (`python-dotenv`)
+
+---
+
+## 6) Project Structure
+
+```text
+AGuard-AI-Agent/
+├─ main.py                          # Entry point; builds and invokes LangGraph
+├─ Readme.md                        # Project documentation
+│
+├─ agents/
+│  ├─ fetch_data.py                 # Gmail + Reddit collection + dedup/sort
+│  ├─ preprocessor.py               # Text cleaning and enrichment
+│  ├─ hard_rules.py                 # Deterministic filtering and hard-rule scoring
+│  ├─ similarity.py                 # Chroma distance -> similarity scoring
+│  ├─ llm_gate.py                   # Structured LLM relevance evaluation
+│  ├─ prompting.py                  # System/human prompts for evaluator
+│  ├─ decision.py                   # Final weighted decision bands
+│  └─ summary_llm.py                # LLM summary generation for notifications
+│
+├─ graph/
+│  ├─ graph.py                      # Node registration and routing topology
+│  ├─ nodes.py                      # Node implementations
+│  ├─ langgraph_routes.py           # Conditional branch logic
+│  ├─ state.py                      # Typed pipeline state schema
+│  ├─ safe_node.py                  # Exception-safe node decorator
+│  └─ logger.py                     # Central logging config
+│
+├─ sources/
+│  ├─ gmail/
+│  │  ├─ auth/auth.py               # Gmail OAuth + service creation
+│  │  ├─ fetcher.py                 # Gmail message fetching
+│  │  └─ parser.py                  # Gmail payload parsing
+│  └─ reddit/
+│     ├─ fetcher.py                 # RSS retrieval
+│     └─ parser.py                  # RSS entry normalization
+│
+├─ database/
+│  ├─ db.py                         # SQLite connection utility
+│  ├─ schema.py                     # Table creation
+│  ├─ aguard.db                     # Local SQLite DB file
+│  └─ repos/
+│     ├─ content_repo.py            # Insert content + content hash generation
+│     └─ decision_repo.py           # Decision logging repository
+│
+├─ memory/
+│  ├─ embedder.py                   # Embedding model loading and encoding
+│  ├─ chroma_client.py              # Persistent Chroma client
+│  ├─ vector_repo.py                # Upsert/query vector memory
+│  └─ chroma_store/                 # On-disk Chroma storage
+│
+├─ notification/
+│  ├─ console.py                    # Console notifier
+│  ├─ email.py                      # SMTP email notifier
+│  ├─ telegram.py                   # Telegram notifier + callback handling
+│  └─ dispatcher.py                 # Multi-channel dispatch helper
+│
+├─ config/
+│  ├─ loader.py                     # YAML loader
+│  └─ user_preferences.yaml         # Personalization rules and thresholds
+│
+└─ utils/
+   └─ stream_utils.py               # Dedup, sorting, stream formatting helpers
 ```
-{
-  id,
-  source,
-  title,
-  body,
-  timestamp,
-  link,
-  metadata
-}
+
+---
+
+## 7) Installation
+
+### Prerequisites
+
+- Python 3.11+
+- Gmail API OAuth credentials (desktop app)
+- Telegram bot (optional but recommended)
+- API access keys for Groq and OpenAI
+
+### Steps
+
+1. **Clone repository**
+
+```bash
+git clone <your-repo-url>
+cd AGuard-AI-Agent
+```
+
+2. **Create and activate virtual environment**
+
+```bash
+python -m venv .venv
+```
+
+Windows (PowerShell):
+
+```bash
+.\.venv\Scripts\Activate.ps1
+```
+
+3. **Install dependencies**
+
+> No `requirements.txt` is currently included, so install from detected imports:
+
+```bash
+pip install \
+  langgraph langchain langchain-core langchain-groq langchain-openai \
+  pydantic python-dotenv pyyaml feedparser requests chromadb \
+  sentence-transformers google-api-python-client google-auth-oauthlib google-auth-httplib2
+```
+
+4. **Set up Gmail OAuth files**
+
+- Place your Google OAuth client file at:
+  - `sources/gmail/auth/credential.json`
+- On first run, token will be created at:
+  - `sources/gmail/auth/token.json`
+
+5. **Create database tables**
+
+```bash
+python -c "from database.schema import create_tables; create_tables()"
 ```
 
 ---
 
-## 5. Hard Filter Rules
+## 8) Environment Variables
 
-### Gmail Hard Filters
+Create a `.env` file in project root:
 
-Apply in order:
+```env
+# Email
+EMAIL_SENDER=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
+EMAIL_RECEIVER=receiver_email@gmail.com
 
-1. Duplicate message ID → drop
-2. Category noise (Promotions/Social/Forums) → drop
-3. Sender blacklist (no-reply, marketing) → drop
-4. Age > X days → drop
-5. Empty or very short subject → drop
-6. Attachment-only emails → drop (optional v1)
+# Telegram
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
 
-**Result:** ~100 → 15–25 emails
-
-### Reddit Hard Filters (RSS)
-
-1. Duplicate post ID → drop
-2. Title length < 15 chars → drop
-3. Rant/vent keywords → drop
-4. Low-signal summaries → drop
-5. Repetitive threads (daily/weekly/megathread) → drop
-
-**Result:** ~50 → 8–12 posts
-
----
-
-## 6. LLM Gate (Minimal)
-
-* Input: cleaned title + body
-* Output: {type: informational | noise, confidence}
-* Reject if noise or confidence below threshold
-
----
-
-## 7. Relevance Scoring Logic
-
-Final relevance score (0–1) is computed as:
-
-```
-Rule Score
-+ LLM Understanding Score
-+ Memory Adjustment
-+ Context Adjustment
+# LLM Providers
+GROQ_API_KEY=your_groq_api_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-**Guidelines:**
+Used directly in code:
 
-* Rules: 30–40%
-* LLM: 30–40%
-* Memory: 20–30%
-* Context: small but important
+- `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_RECEIVER`
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
 
-**Thresholds:**
+Provider SDKs also require:
 
-* ≥ 0.6 → Notify
-* 0.4–0.6 → Batch
-* < 0.4 → Ignore
+- `GROQ_API_KEY` (for `ChatGroq`)
+- `OPENAI_API_KEY` (for `ChatOpenAI`)
 
 ---
 
-## 8. Decision Explainability
+## 9) Usage / Running the Project
 
-Every decision must generate a human-readable reason, e.g.:
+### Run main pipeline
 
-> “Notified because it matched your interest in internships and similar posts were clicked before.”
-
----
-
-## 9. Memory Design
-
-### Content Memory
-
-* Prevent duplicates
-* Enable similarity checks
-
-### Interaction Memory
-
-* Track clicks/ignores
-* Behavior beats opinion
-
-### Preference Memory
-
-* Explicit user rules (topics, sources)
-
-### Pattern Memory
-
-* Derived stats (topic click rate, source ignore rate)
-
----
-
-## 10. Project Structure
-
+```bash
+python main.py
 ```
-attention_guardian/
-├── main.py
-├── config/
-│   └── user_preferences.yaml
-├── agents/
-│   ├── scheduler.py
-│   ├── fetcher_gmail.py
-│   ├── fetcher_reddit_rss.py
-│   ├── preprocessor.py
-│   ├── hard_filters.py
-│   ├── llm_gate.py
-│   ├── scoring.py
-│   ├── decision.py
-│   └── notifier.py
-├── storage/
-│   ├── db.py
-│   └── vector_store.py
-├── logs/
-│   └── decisions.log
-└── README.md
+
+### Alternative runner (debug)
+
+```bash
+python scripts/graph_execution.py
+```
+
+### Helpful validation scripts
+
+```bash
+python scripts/check_env.py
+python scripts/check_email.py
+python scripts/check_telegram.py
+python scripts/test_embedding.py
 ```
 
 ---
 
-## 11. Gmail API Setup (Summary)
+## 10) Example Output / Behavior
 
-* Create Google Cloud project
-* Enable Gmail API
-* Configure OAuth consent (External, gmail.readonly)
-* Create OAuth Client ID (Desktop)
-* Use credentials.json for app identity
-* token.json stores user permission
+During decision stage, the system prints per-item scoring:
 
----
+```text
+DECISION | <content_id> | rule=0.70 | vector=0.62 | llm=0.88 | final=0.77 | Notify
+DECISION | <content_id> | rule=0.60 | vector=0.41 | llm=0.52 | final=0.51 | Archive
+```
 
-## 12. Reddit Ingestion (V1)
+Then notifications are routed:
 
-* Use official subreddit RSS feeds
-* No authentication required
-* Replaceable with API-based fetcher later
+- `Notify` items -> Telegram alert (with a View link and Ignore button).
+- `Archive` items -> Email summary alert.
 
----
+If no actionable items exist:
 
-## 13. Logging & Evaluation
-
-* Log every rejection and decision
-* Store stage and reason
-* Enables tuning, debugging, and trust
+```text
+ℹ️ No items to notify
+```
 
 ---
 
-## 14. README Talking Points (Interview-Ready)
-
-* Real user pain: attention overload
-* System-first design, not chatbot
-* Noise reduction before intelligence
-* Explainable decisions
-* Cloud-agnostic, deployable later
-
----
-
-## 15. Roadmap
-
-* V1: Local run, Gmail + Reddit RSS
-* V2: Cloud deployment (serverless)
-* V3: Additional sources (LinkedIn, GitHub)
-
----
-
-**Principle to remember:**
-
-> Great agents reduce workload before they increase intelligence.
