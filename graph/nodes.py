@@ -106,13 +106,7 @@ def llm_node(state : AGuardState):
 
     return {'llm_gate_items': llm_passed_items, "llm_decisions": results}
 
-'''
-hard_rule_score
-similarity_score
-llm_score
-content_id
-llm_reason
-'''
+
 @safe_node
 def decision_node(state : AGuardState):
     decisions = []
