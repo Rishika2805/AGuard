@@ -142,9 +142,10 @@ The main runtime compiles a LangGraph pipeline with conditional branches:
 7. **decision**
    - Compute final weighted score:
 
-   $$
-   	ext{final\_score} = 0.25 \cdot \text{hard\_rule\_score} + 0.25 \cdot \text{similarity\_score} + 0.50 \cdot \text{llm\_score}
-   $$
+   final_score =
+   0.25 * hard_rule_score +
+   0.25 * similarity_score +
+   0.50 * llm_score
 
    - Route to `Notify`, `Archive`, or `Ignore`.
 8. **notify**
