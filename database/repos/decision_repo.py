@@ -30,9 +30,7 @@ def log_decision(decision: dict) -> None:
             )
         )
         conn.commit()
-        print("Decision logged to DB")
     except Exception as e:
-        print("❌ DB ERROR:", e)
         raise
     finally:
         conn.close()

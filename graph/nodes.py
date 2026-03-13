@@ -13,7 +13,8 @@ from agents.llm_gate import evaluate_content
 from memory.vector_repo import upsert_content_embedding
 from agents.decision import make_decision
 from agents.summary_llm import generate_summary
-from notification.dispatcher import dispatch_notification
+from notification.email import notify_email
+from notification.telegram import notify_telegram
 
 
 @safe_node
@@ -81,6 +82,7 @@ def vector_node(state : AGuardState):
         get_similarity_scores(item)
 
     logger.info(f"Vectorized {inserted} items")
+    return state
 
 
 @safe_node
@@ -160,18 +162,15 @@ def notification_node(state: AGuardState):
 
     notify_items = state.get("notify_items", [])
     archive_items = state.get("archive_items", [])
-    print("🚀 Entered notification_node")
-    print("notify_items:", len(state.get("notify_items", [])))
-    print("archive_items:", len(state.get("archive_items", [])))
 
     if not notify_items and not archive_items:
         print("ℹ️ No items to notify")
         return {}
     for item in notify_items:
-        dispatch_notification(item)
+        notify_telegram(item)
 
     for item in archive_items:
-        dispatch_notification(item)
+        notify_email(item)
     return state
 
 

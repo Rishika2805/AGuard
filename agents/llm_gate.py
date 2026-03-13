@@ -1,12 +1,15 @@
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field, validator
+from langchain_groq import ChatGroq
+from pydantic import BaseModel, Field, validator, ConfigDict
 from typing import Literal
-from agents.cot_prompting import generate_prompt
+from agents.prompting import generate_prompt
 import json
 
 
 
 class EvaluateResult(BaseModel):
+    model_config = ConfigDict(extra="forbid") # to prevent llm from generating extra feilds
+
+
     relevance_score : float = Field(ge=0.0,le=1.0,description="Relevance score")
     decision : Literal["Allowed", "Rejected"]
     confidence : Literal["low", "medium", "high"]
@@ -18,25 +21,26 @@ class EvaluateResult(BaseModel):
             raise ValueError("Reason must be concise (≤20 words)")
         return v
 
-    # @validator("decision")
-    # def decision_validator(cls, v,values):
-    #     score = values.get("relevance_score",0)
-    #
-    #     if v == "Allowed" and score <= 0.4:
-    #         raise ValueError("Allowed content must have relevance_score > 0.2")
-    #     return v
 
-
-llm = ChatOpenAI(
-    model = "gpt-4o",
+# Groq LLM
+llm = ChatGroq(
+    model="llama-3.1-8b-instant",  # good for classification tasks
     temperature=0.0
 )
 
+# Structured Output
 llm_evaluator = llm.with_structured_output(EvaluateResult)
 
 def evaluate_content(item : dict) -> dict:
     prompt = generate_prompt(item)
 
-    response = llm_evaluator.invoke(prompt)
-
-    return response.model_dump()
+    try:
+        response = llm_evaluator.invoke(prompt)
+        return response.model_dump()
+    except Exception as e:
+        return {
+            "relevance_score": 0.0,
+            "decision": "Rejected",
+            "confidence": "low",
+            "reason": "LLM evaluation failed"
+        }

@@ -25,8 +25,10 @@ def route_after_decision(state):
     Decide next step after decision
     """
 
-    if not state.get('notify_items'):
-        return 'end'
-    if not state.get('archive_items'):
-        return 'end'
-    return 'notify'
+    notify_items = state.get("notify_items", [])
+    archive_items = state.get("archive_items", [])
+
+    if notify_items or archive_items:
+        return "notify"
+
+    return "end"

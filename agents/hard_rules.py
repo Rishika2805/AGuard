@@ -170,7 +170,7 @@ def apply_hard_rules(item: dict) -> dict:
     item["hard_rule_score"] = score
 
     # ---------- PASS LOGIC ----------
-    if score >= 0.2:  # 🔥 MUCH LOWER GATE
+    if score >= 0.6:  # 🔥 MUCH LOWER GATE
         return pass_to_llm(
             item,
             reason=", ".join(reasons) or "Passed hard rules",

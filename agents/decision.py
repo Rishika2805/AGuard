@@ -28,10 +28,10 @@ def make_decision(inputs: dict) -> dict:
     )
 
     # ---------- DECISION BANDS ----------
-    if final_score >= 0.5:
+    if final_score >= 0.7:
         decision = "Notify"
         confidence = "high"
-    elif final_score >= 0.35:
+    elif final_score >= 0.45:
         decision = "Archive"   # 🔥 MORE ARCHIVE, LESS IGNORE
         confidence = "medium"
     else:

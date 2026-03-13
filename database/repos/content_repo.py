@@ -31,7 +31,6 @@ def insert_content(item : dict,cursor) -> bool:
     Returns True if insertion was successful, False otherwise
     """
     if is_malformed(item):
-        print(f"[SKIPPED][MALFORMED]: {item.get('id')}]")
         return False
 
     content_hash = generate_content_hash(item)
@@ -69,10 +68,8 @@ def insert_content(item : dict,cursor) -> bool:
             )
         )
 
-        print(f"[INSERTED] {item['source']}::{item['id']}")
         return True
 
     except Exception as e:
-        print(f"[SKIPPED][ERROR]: {e}")
         return False
 

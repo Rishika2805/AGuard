@@ -15,13 +15,4 @@ def dispatch_notification(item: dict):
     notify_email(item)
     notify_telegram(item)
 
-    # # Always log to console (safe default)
-    # notify_console(item)
-    #
-    # # High confidence → email
-    # if item.get("confidence") == "high":
-    #     notify_email(item)
-    #
-    # # Reddit content → Telegram
-    # if item.get("source") == "reddit":
-    #     notify_telegram(item)
+

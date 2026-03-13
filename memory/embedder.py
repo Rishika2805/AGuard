@@ -1,18 +1,17 @@
 # memory/embedder.py
 
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
+from sentence_transformers import SentenceTransformer
 
 
 load_dotenv()
 
-_embeddings = None
+model = SentenceTransformer("BAAI/bge-base-en-v1.5")
 
-def get_embedding_model():
-    global _embeddings
-    if _embeddings is None:
-        _embeddings = OpenAIEmbeddings(
-            model="text-embedding-3-small"
+def get_embedding(text):
+    _embeddings = model.encode(
+        text,
+        normalize_embeddings=True # Important for cosine similarity
         )
     return _embeddings
 
@@ -22,5 +21,4 @@ def embed_text(text : str) -> list[float]:
     Generate embedding for given text
     """
 
-    model = get_embedding_model()
-    return model.embed_query(text)
+    return get_embedding(text)
